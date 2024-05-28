@@ -14,6 +14,7 @@ const int clockPin = 6; // pu
 byte mac[] = {
   0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xEA
 };
+byte RefID[4] = {0};
 byte emp = 0b00000000;
 byte dot = 0b00000001;
 byte dec[] = {
@@ -121,20 +122,77 @@ void ntp() {
   Udp.read(packetBuffer, NTP_PACKET_SIZE);
   /*
   if (
-    packetBuffer[0] == 0b11100011 &&
+    packetBuffer[0] == 0xE3 &&
     packetBuffer[1] == 0 &&
     packetBuffer[2] == 6 &&
     packetBuffer[3] == 0xEC ) return;
-
-  if (packetBuffer[36] == 0)  return;
-  if (packetBuffer[37] == 0)  return;
-  if (packetBuffer[38] == 0)  return;
-  if (packetBuffer[39] == 0)  return;
-  if (packetBuffer[40] == 0)  return;
-  if (packetBuffer[41] == 0)  return;
-  if (packetBuffer[42] == 0)  return;
-  if (packetBuffer[43] == 0)  return;
 */
+// ntp.recvtime =! NULL
+  if (packetBuffer[36] == 0 && 
+  packetBuffer[37] == 0 && 
+  packetBuffer[38] == 0 && 
+  packetBuffer[39] == 0 && 
+  packetBuffer[40] == 0 && 
+  packetBuffer[41] == 0 && 
+  packetBuffer[42] == 0 && 
+  packetBuffer[43] == 0 ) return;
+
+/*
+if(
+  packetBuffer[4] == 0 &&
+  packetBuffer[5] == 0 &&
+  packetBuffer[6] == 0 &&
+  packetBuffer[7] == 0)
+  return;
+  */
+if(
+  RefID[0] == 0 &&
+  RefID[1] == 0 &&
+  RefID[2] == 0 &&
+  RefID[3] == 0)
+  memcpy(RefID, packetBuffer +12, 4);
+
+
+  if(memcmp(RefID, packetBuffer +12, 4))
+  {
+      int i;  
+    
+    for (i = 12; i < 12+4; i++) Serial.print(packetBuffer[i], HEX);
+    Serial.print(" is not " ); 
+    
+    for (i = 0; i < 4; i++) Serial.print(RefID[i], HEX);
+    
+    Serial.println(" " );
+    return;
+  }
+
+  
+    int i;
+   // for (i = 12; i < 16; i++) Serial.print(packetBuffer[i], HEX);
+    
+    i = 0;
+    /*
+    for (; i < 4; i++) Serial.print(packetBuffer[i], HEX);
+    Serial.print(" RD" );
+    for (; i < 8; i++) Serial.print(packetBuffer[i], HEX);
+    Serial.print(" RD" );
+    for (; i < 12; i++) Serial.print(packetBuffer[i], HEX);
+    Serial.print(" ID" );
+    for (; i < 16; i++) Serial.print(packetBuffer[i], HEX);
+    */
+    /*
+    Serial.print(" RT" );
+    for (; i < 24; i++) Serial.print(packetBuffer[i], HEX);
+    Serial.print(" OT" );
+    for (; i < 32; i++) Serial.print(packetBuffer[i], HEX);
+    Serial.print(" RT" );
+    for (; i < 40; i++) Serial.print(packetBuffer[i], HEX);
+    Serial.print(" TT" );
+    for (; i < 48; i++) Serial.print(packetBuffer[i], HEX);
+    */
+    
+   // Serial.println(" " );
+
   unsigned long highWord = word(packetBuffer[40], packetBuffer[41]);
   unsigned long lowWord = word(packetBuffer[42], packetBuffer[43]);
   unsigned long secsSince1900 = highWord << 16 | lowWord;
@@ -145,18 +203,6 @@ void ntp() {
   lowWord = word(packetBuffer[38], packetBuffer[39]);
   nt = highWord << 16 | lowWord;
 
-  
-    int i;
-    for (i = 0; i < 10; i++) Serial.print(packetBuffer[i], HEX);
-    Serial.print(" " );
-    for (i = 10; i < 20; i++) Serial.print(packetBuffer[i], HEX);
-    Serial.print(" " );
-    for (i = 20; i < 30; i++) Serial.print(packetBuffer[i], HEX);
-    Serial.print(" " );
-    for (i = 30; i < 40; i++) Serial.print(packetBuffer[i], HEX);
-    Serial.print(" " );
-    for (i = 40; i < 50; i++) Serial.print(packetBuffer[i], HEX);
-    Serial.println(" " );
 
   
 
@@ -192,7 +238,6 @@ void loop() {
    int len;
   long timing = millis() + 1000;
   sendNTPpacket(timeServer); // send an NTP packet to a time server
-  len =Udp.parsePacket();
   while (millis() < timing)
   {
     display();
@@ -202,6 +247,7 @@ void loop() {
   if (reboot > 1800 ) software_reset();
 
   //Serial.print(len, DEC);
+    len =Udp.parsePacket();
   if (len == NTP_PACKET_SIZE) ntp();
   Ethernet.maintain();
 }
