@@ -119,6 +119,7 @@ void ntp() {
 
 
   Udp.read(packetBuffer, NTP_PACKET_SIZE);
+  /*
   if (
     packetBuffer[0] == 0b11100011 &&
     packetBuffer[1] == 0 &&
@@ -133,7 +134,7 @@ void ntp() {
   if (packetBuffer[41] == 0)  return;
   if (packetBuffer[42] == 0)  return;
   if (packetBuffer[43] == 0)  return;
-
+*/
   unsigned long highWord = word(packetBuffer[40], packetBuffer[41]);
   unsigned long lowWord = word(packetBuffer[42], packetBuffer[43]);
   unsigned long secsSince1900 = highWord << 16 | lowWord;
@@ -144,7 +145,7 @@ void ntp() {
   lowWord = word(packetBuffer[38], packetBuffer[39]);
   nt = highWord << 16 | lowWord;
 
-  /*
+  
     int i;
     for (i = 0; i < 10; i++) Serial.print(packetBuffer[i], HEX);
     Serial.print(" " );
@@ -157,7 +158,7 @@ void ntp() {
     for (i = 40; i < 50; i++) Serial.print(packetBuffer[i], HEX);
     Serial.println(" " );
 
-  */
+  
 
 }
 
@@ -188,8 +189,10 @@ void setup() {
 int n = 0;
 int reboot = 0;
 void loop() {
+   int len;
   long timing = millis() + 1000;
   sendNTPpacket(timeServer); // send an NTP packet to a time server
+  len =Udp.parsePacket();
   while (millis() < timing)
   {
     display();
@@ -197,10 +200,11 @@ void loop() {
   }
   reboot++;
   if (reboot > 1800 ) software_reset();
-  if (Udp.parsePacket() == NTP_PACKET_SIZE) ntp();
+
+  //Serial.print(len, DEC);
+  if (len == NTP_PACKET_SIZE) ntp();
   Ethernet.maintain();
 }
-
 
 
 
